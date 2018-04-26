@@ -58,6 +58,14 @@ class MPL(object):
 			delta, grads['W%d'%(self.num_layers-l+1)], grads['b%d'%(self.num_layers-l+1)] = self.layers[-l].feed_backward(delta) # regularization
 		return loss, grads
 
+	def update_params(self, params):
+		'''
+		Update layers with new weights and biases
+		params: List of (W,b) tuples
+		'''
+		for layer, param in zip(self.layers, params):
+			layer.update(*param)
+
 
 	def __initialize_layers(self, hidden_size, input_size, n_classes, weight_scale):
 		dims = [input_size] + hidden_size + [n_classes]

@@ -39,6 +39,13 @@ class AbstractLayer(object):
 		'''
 		return
 
+	def update(self, W, b):
+		'''
+		Updates weights and biases
+		'''
+		self.W = W
+		self.b = b
+
 
 class ConnectedLayer(AbstractLayer):
 	def __init__(input_size, outout_size, activation, weight_scale):
