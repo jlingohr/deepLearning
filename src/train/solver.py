@@ -9,6 +9,7 @@ import pickle as pickle
 import numpy as np
 
 import optim
+
 class Solver(object):
 	"""
     A Solver encapsulates all the logic necessary for training classification
