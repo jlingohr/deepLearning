@@ -5,12 +5,30 @@ from src.layers import ConnectedLayer, OutputLayer
 from src.loss import softmax_loss
 
 class MLP(object):
-	def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10, weight_scale=1e-2, reg=0.0, dtype=np.float32):
-		self.hidden_dims = hidden_dims
+	def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10, normalization=None,
+		weight_scale=1e-2, reg=0.0, dtype=np.float32):
+		'''
+		- hidden_dims: A list of integers giving the size of each hidden layer.
+	    - input_dim: An integer giving the size of the input.
+	    - num_classes: An integer giving the number of classes to classify.
+	    - dropout: Scalar between 0 and 1 giving dropout strength. If dropout=0 then
+	      the network should not use dropout at all.
+	    - use_batchnorm: Whether or not the network should use batch normalization.
+	    - reg: Scalar giving L2 regularization strength.
+	    - weight_scale: Scalar giving the standard deviation for random
+	      initialization of the weights.
+	    - dtype: A numpy datatype object; all computations will be performed using
+	      this datatype. float32 is faster but less accurate, so you should use
+	      float64 for numeric gradient checking.
+	    - seed: If not None, then pass this random seed to the dropout layers. This
+	      will make the dropout layers deteriminstic so we can gradient check the
+	      model.
+      '''
 		self.num_layers = len(hidden_dims)+1
-		self.layers = self.__initialize_layers(hidden_dims, input_dim, num_classes, weight_scale, dtype)
 		self.dtype = dtype
 		self.reg = reg
+		self.normalization = normalization
+		self.layers = self.__initialize_layers(hidden_dims, input_dim, num_classes, weight_scale)
 
 	def loss(self, X, y=None):
 		'''
@@ -63,7 +81,7 @@ class MLP(object):
 		grads['W%d'%self.num_layers] += self.reg*self.layers[-1].W
 
 		for l in range(2, self.num_layers+1):
-			delta, grads['W%d'%(self.num_layers-l+1)], grads['b%d'%(self.num_layers-l+1)] = self.layers[-l].feed_backward(delta) # regularization
+			delta, grads['W%d'%(self.num_layers-l+1)], grads['b%d'%(self.num_layers-l+1)] = self.layers[-l].feed_backward(delta)
 			grads['W%d'%(self.num_layers-l+1)] += self.reg*self.layers[-l].W
 		return loss, grads
 
@@ -76,15 +94,15 @@ class MLP(object):
 			layer.update(*param)
 
 
-	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale, dtype):
+	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
 		dims = [input_dim] + hidden_dims + [num_classes]
 		layers = []
 
 		for l in range(self.num_layers-1):
-			layer = ConnectedLayer(dims[l], dims[l+1], weight_scale, dtype)
+			layer = ConnectedLayer(dims[l], dims[l+1], weight_scale, self.dtype)
 			layers.append(layer)
 
-		layer = OutputLayer(dims[-2], dims[-1], weight_scale, dtype)
+		layer = OutputLayer(dims[-2], dims[-1], weight_scale, self.dtype)
 		layers.append(layer)
 
 		return layers
