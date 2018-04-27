@@ -1,14 +1,16 @@
 import numpy as np
 import random
 
-from layers import ConnectedLayer, OutputLayer
-from loss import softmax_loss
+from src.layers import ConnectedLayer, OutputLayer
+from src.loss import softmax_loss
 
-class MPL(object):
-	def __init__(self, hidden_size, input_size, n_classes, weight_scale=1e-2):
-		self.hidden_size = hidden_size
-		self.num_layers = len(hidden_size)+1
-		self.layers = __initialize_layers(hidden_size, input_size, n_classes, weight_scale)
+class MLP(object):
+	def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10, weight_scale=1e-2, reg=0.0, dtype=np.float32):
+		self.hidden_dims = hidden_dims
+		self.num_layers = len(hidden_dims)+1
+		self.layers = self.__initialize_layers(hidden_dims, input_dim, num_classes, weight_scale)
+		self.dtype = dtype
+		self.reg = reg
 
 	def loss(self, X, y=None):
 		'''
@@ -23,12 +25,14 @@ class MPL(object):
 		y: array of labels where y[i] gives the label for X[i]
 
 		'''
-		scores = forward_prop(X)
+		X = X.astype(self.dtype)
+
+		scores = self.forward_prop(X)
 		# If test mode return early
-		if y == None:
+		if y is None:
 			return scores
 		# Use backpropagation
-		loss, grads = backward_prop(scores, y)
+		loss, grads = self.backward_prop(scores, y)
 		return loss, grads
 
 
@@ -40,6 +44,7 @@ class MPL(object):
 		scores = X
 		for layer in self.layers:
 			scores = layer.feed_forward(scores)
+		return scores
 
 	def backward_prop(self, scores, y):
 		'''
@@ -49,13 +54,17 @@ class MPL(object):
 
 		Returns regularized loss and gradients
 		'''
-		loss, dscores = softmax_loss(scores, y) #TODO add regularization
+		loss, dscores = softmax_loss(scores, y) 
+		for layer in self.layers:
+			loss += 0.5*self.reg*np.sum(layer.W**2)
 		grads = {}
 
-		delta, grads['W%d'%self.num_layers], grads['b%d'%self.num_layers] = self.layers[-1].feed_backward(dscores) #add regularization
+		delta, grads['W%d'%self.num_layers], grads['b%d'%self.num_layers] = self.layers[-1].feed_backward(dscores) 
+		grads['W%d'%self.num_layers] += self.reg*self.layers[-1].W
 
-		for l in xrange(2, self.num_layers):
+		for l in range(2, self.num_layers+1):
 			delta, grads['W%d'%(self.num_layers-l+1)], grads['b%d'%(self.num_layers-l+1)] = self.layers[-l].feed_backward(delta) # regularization
+			grads['W%d'%(self.num_layers-l+1)] += self.reg*self.layers[-l].W
 		return loss, grads
 
 	def update_params(self, params):
@@ -67,12 +76,15 @@ class MPL(object):
 			layer.update(*param)
 
 
-	def __initialize_layers(self, hidden_size, input_size, n_classes, weight_scale):
-		dims = [input_size] + hidden_size + [n_classes]
+	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
+		dims = [input_dim] + hidden_dims + [num_classes]
 		layers = []
 
 		for l in range(self.num_layers-1):
 			layer = ConnectedLayer(dims[l], dims[l+1], weight_scale)
 			layers.append(layer)
 
-		layers.append(OutputLayer(dims[-2], dims[-1], weight_scale))
+		layer = OutputLayer(dims[-2], dims[-1], weight_scale)
+		layers.append(layer)
+
+		return layers

@@ -8,10 +8,10 @@ import pickle as pickle
 
 import numpy as np
 
-import optim
+from src.train import optim
 
 class Solver(object):
-	"""
+    """
     A Solver encapsulates all the logic necessary for training classification
     models. The Solver performs stochastic gradient descent using different
     update rules defined in optim.py.
@@ -164,11 +164,11 @@ class Solver(object):
         #     d = {k: v for k, v in self.optim_config.items()}
         #     self.optim_configs[p] = d
         for l in range(len(self.model.layers)):
-        	d = {k: v for k, v in self.optim_config.items()}
-        	w = self.model.layers[i].W
-        	b = self.model.layers[i].b
-        	self.optim_config['W%d'%(l+1)] = d
-        	self.optim_config['b%d'%(l+1)] = d
+            d = {k: v for k, v in self.optim_config.items()}
+            w = self.model.layers[l].W
+            b = self.model.layers[l].b
+            self.optim_configs['W%d'%(l+1)] = d
+            self.optim_configs['b%d'%(l+1)] = d
 
 
 
@@ -195,17 +195,17 @@ class Solver(object):
         #     self.model.params[p] = next_w
         #     self.optim_configs[p] = next_config
         for l in range(len(self.model.layers)):
-        	p = l+1
-        	layer = self.model.layers[l]
-        	dw = grads['W%d'%p]
-        	db = grads['b%d'%p]
-        	config_w = self.optim_configs['W%d'%p]
-        	config_b = self.optim_configs['b%d'%p]
-        	next_w, next_w_config = self.update_rule(layer.W, dw, config_w)
-        	next_b, next_b_config = self.update_rule(layer.b, db, config_b)
-        	layer.update(next_w, next_b)
-        	self.optim_configs['W%d'%p] = next_w_config
-        	self.optim_configs['b%d'%p] = next_b_config
+            p = l+1
+            layer = self.model.layers[l]
+            dw = grads['W%d'%p]
+            db = grads['b%d'%p]
+            config_w = self.optim_configs['W%d'%p]
+            config_b = self.optim_configs['b%d'%p]
+            next_w, next_w_config = self.update_rule(layer.W, dw, config_w)
+            next_b, next_b_config = self.update_rule(layer.b, db, config_b)
+            layer.update(next_w, next_b)
+            self.optim_configs['W%d'%p] = next_w_config
+            self.optim_configs['b%d'%p] = next_b_config
 
 
     def _save_checkpoint(self):
@@ -319,8 +319,8 @@ class Solver(object):
                     # for k, v in self.model.params.items():
                     #     self.best_params[k] = v.copy()
                     for layer in self.model.layers:
-                    	W, b = layer.W, layer.b
-                    	self.best_params.append((W,b))
+                        W, b = layer.W, layer.b
+                        self.best_params.append((W,b))
 
         # At the end of training swap the best params into the model
         self.model.update_params(self.best_params)# = self.best_params

@@ -1,22 +1,23 @@
 import numpy as np 
 import random
-import abc
+from abc import ABCMeta, abstractmethod
 
-from activation import *
+from src.activation import *
 
 
-class AbstractLayer(object):
-	@abc.abstractmethod
-	def __init__(input_size, outout_size, activation, weight_scale):
+class AbstractLayer(metaclass=ABCMeta):
+
+	def __init__(self, input_size, output_size, weight_scale):
 		'''
 		Initialize each layer in the network with a weight matrix
 		W chosen from a Gaussian distribution and an intercept
 		of 0
 		'''
-		self.W = np.random.normal(0, scale=weight_scale, size=(input_size, outout_size))
-		self.b = np.zeros(outout_size)
+		#super().__init__()
+		self.W = np.random.randn(input_size, output_size) * weight_scale
+		self.b = np.zeros(output_size)
 
-	@abc.abstractmethod
+	@abstractmethod
 	def feed_forward(self, x):
 		'''
 		Compute forward pass for a single layer
@@ -28,16 +29,16 @@ class AbstractLayer(object):
 
 		side-effect: caches result of forward pass
 		'''
-		return
+		pass
 
-	@abc.abstractmethod
+	@abstractmethod
 	def feed_backward(self, dscores):
 		'''
 		Compute backpropagation for a single layer
 
 		dscores: upstream derivative
 		'''
-		return
+		pass
 
 	def update(self, W, b):
 		'''
@@ -48,23 +49,23 @@ class AbstractLayer(object):
 
 
 class ConnectedLayer(AbstractLayer):
-	def __init__(input_size, outout_size, activation, weight_scale):
-		Layer.__init__(input_size, outout_size, activation, weight_scale)
+	def __init__(self, input_size, output_size, weight_scale):
+		AbstractLayer.__init__(self, input_size, output_size, weight_scale)
 
 	def feed_forward(self, x):
-		out, cache = affine_relu_forward(x, self.w, self.b)
+		out, cache = affine_relu_forward(x, self.W, self.b)
 		self.cache = cache
 		return out
 
-	def feed_backwards(self, dscores):
+	def feed_backward(self, dscores):
 		return affine_relu_backward(dscores, self.cache)
 
 class OutputLayer(AbstractLayer):
-	def __init__(input_size, outout_size, activation, weight_scale):
-		Layer.__init__(input_size, outout_size, activation, weight_scale)
+	def __init__(self, input_size, output_size, weight_scale):
+		AbstractLayer.__init__(self, input_size, output_size, weight_scale)
 
 	def feed_forward(self, x):
-		out, cache = affine_forward(x, self.w, self.b)
+		out, cache = affine_forward(x, self.W, self.b)
 		self.cache = cache
 		return out
 
