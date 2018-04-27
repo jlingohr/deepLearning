@@ -11,9 +11,7 @@ def affine_forward(x, w, b):
 	Returns a tuple of (out, cache) where out is the output
 	and cache is (x, w, b)
 	'''
-	D = np.prod(x.shape[1:])
-	x2 = x.reshape(x.shape[0], D)
-	out = x2@w + b
+	out = (x.reshape(x.shape[0], w.shape[0]))@w + b
 	cache = (x, w, b)
 
 	return out, cache
@@ -37,10 +35,9 @@ def affine_backward(dout, cache):
 	x, w, b = cache
 	dx, dw, db = None, None, None
 
-	x2 = x.reshape(x.shape[0], np.prod(x.shape[1:]))
 	dx = (dout@w.T).reshape(x.shape)
-	dw = x2.T@dout
-	db = np.sum(dout.T, axis=1)
+	dw = x.reshape(x.shape[0], w.shape[0]).T@dout
+	db = np.sum(dout, axis=0)
 	return dx, dw, db
 
 

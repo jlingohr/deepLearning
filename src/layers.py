@@ -7,7 +7,7 @@ from src.activation import *
 
 class AbstractLayer(metaclass=ABCMeta):
 
-	def __init__(self, input_size, output_size, weight_scale):
+	def __init__(self, input_size, output_size, weight_scale, dtype):
 		'''
 		Initialize each layer in the network with a weight matrix
 		W chosen from a Gaussian distribution and an intercept
@@ -15,7 +15,9 @@ class AbstractLayer(metaclass=ABCMeta):
 		'''
 		#super().__init__()
 		self.W = np.random.randn(input_size, output_size) * weight_scale
+		self.W = self.W.astype(dtype)
 		self.b = np.zeros(output_size)
+		self.b = self.b.astype(dtype)
 
 	@abstractmethod
 	def feed_forward(self, x):
@@ -44,13 +46,14 @@ class AbstractLayer(metaclass=ABCMeta):
 		'''
 		Updates weights and biases
 		'''
+		#print(self.W.shape, W.shape, self.b.shape, b.shape)
 		self.W = W
 		self.b = b
 
 
 class ConnectedLayer(AbstractLayer):
-	def __init__(self, input_size, output_size, weight_scale):
-		AbstractLayer.__init__(self, input_size, output_size, weight_scale)
+	def __init__(self, input_size, output_size, weight_scale, dtype):
+		AbstractLayer.__init__(self, input_size, output_size, weight_scale, dtype)
 
 	def feed_forward(self, x):
 		out, cache = affine_relu_forward(x, self.W, self.b)
@@ -61,8 +64,8 @@ class ConnectedLayer(AbstractLayer):
 		return affine_relu_backward(dscores, self.cache)
 
 class OutputLayer(AbstractLayer):
-	def __init__(self, input_size, output_size, weight_scale):
-		AbstractLayer.__init__(self, input_size, output_size, weight_scale)
+	def __init__(self, input_size, output_size, weight_scale, dtype):
+		AbstractLayer.__init__(self, input_size, output_size, weight_scale, dtype)
 
 	def feed_forward(self, x):
 		out, cache = affine_forward(x, self.W, self.b)

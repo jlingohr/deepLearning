@@ -8,7 +8,7 @@ class MLP(object):
 	def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10, weight_scale=1e-2, reg=0.0, dtype=np.float32):
 		self.hidden_dims = hidden_dims
 		self.num_layers = len(hidden_dims)+1
-		self.layers = self.__initialize_layers(hidden_dims, input_dim, num_classes, weight_scale)
+		self.layers = self.__initialize_layers(hidden_dims, input_dim, num_classes, weight_scale, dtype)
 		self.dtype = dtype
 		self.reg = reg
 
@@ -76,15 +76,15 @@ class MLP(object):
 			layer.update(*param)
 
 
-	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
+	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale, dtype):
 		dims = [input_dim] + hidden_dims + [num_classes]
 		layers = []
 
 		for l in range(self.num_layers-1):
-			layer = ConnectedLayer(dims[l], dims[l+1], weight_scale)
+			layer = ConnectedLayer(dims[l], dims[l+1], weight_scale, dtype)
 			layers.append(layer)
 
-		layer = OutputLayer(dims[-2], dims[-1], weight_scale)
+		layer = OutputLayer(dims[-2], dims[-1], weight_scale, dtype)
 		layers.append(layer)
 
 		return layers

@@ -164,11 +164,10 @@ class Solver(object):
         #     d = {k: v for k, v in self.optim_config.items()}
         #     self.optim_configs[p] = d
         for l in range(len(self.model.layers)):
+            p = l+1
             d = {k: v for k, v in self.optim_config.items()}
-            w = self.model.layers[l].W
-            b = self.model.layers[l].b
-            self.optim_configs['W%d'%(l+1)] = d
-            self.optim_configs['b%d'%(l+1)] = d
+            self.optim_configs['W%d'%p] = d.copy()
+            self.optim_configs['b%d'%p] = d.copy()
 
 
 
@@ -199,13 +198,17 @@ class Solver(object):
             layer = self.model.layers[l]
             dw = grads['W%d'%p]
             db = grads['b%d'%p]
+
+            # Compute step for W
             config_w = self.optim_configs['W%d'%p]
-            config_b = self.optim_configs['b%d'%p]
             next_w, next_w_config = self.update_rule(layer.W, dw, config_w)
-            next_b, next_b_config = self.update_rule(layer.b, db, config_b)
-            layer.update(next_w, next_b)
             self.optim_configs['W%d'%p] = next_w_config
+            # Compute step for b
+            config_b = self.optim_configs['b%d'%p]
+            next_b, next_b_config = self.update_rule(layer.b, db, config_b)
             self.optim_configs['b%d'%p] = next_b_config
+            # Update W and b
+            layer.update(next_w, next_b)
 
 
     def _save_checkpoint(self):
@@ -320,7 +323,7 @@ class Solver(object):
                     #     self.best_params[k] = v.copy()
                     for layer in self.model.layers:
                         W, b = layer.W, layer.b
-                        self.best_params.append((W,b))
+                        self.best_params.append((W.copy(),b.copy()))
 
         # At the end of training swap the best params into the model
         self.model.update_params(self.best_params)# = self.best_params
