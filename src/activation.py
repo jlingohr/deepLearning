@@ -176,7 +176,7 @@ def batchnorm_backward(dout, cache):
     # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
     # might prove to be helpful.                                              #
     ###########################################################################
-    pass
+    x, normalized, gamma, beta, mu, var, eps = cache
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

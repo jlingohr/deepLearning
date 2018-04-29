@@ -23,7 +23,7 @@ class MLP(object):
 	    - seed: If not None, then pass this random seed to the dropout layers. This
 	      will make the dropout layers deteriminstic so we can gradient check the
 	      model.
-      '''
+      	'''
 		self.num_layers = len(hidden_dims)+1
 		self.dtype = dtype
 		self.reg = reg
@@ -85,13 +85,30 @@ class MLP(object):
 			grads['W%d'%(self.num_layers-l+1)] += self.reg*self.layers[-l].W
 		return loss, grads
 
+	def params(self):
+		'''
+		Return weights and coefficients of each layer in a parameter
+		dictionary.
+		Returns:
+		params: dictionary of weights W and coefficients b
+		'''
+		params = {}
+		for l in range(len(self.layers)):
+			p = l+1
+			params['W%d'%p] = self.layers[l].W.copy()
+			params['b%d'%p] = self.layers[l].b.copy()
+		return params
+
 	def update_params(self, params):
 		'''
 		Update layers with new weights and biases
-		params: List of (W,b) tuples
+		params: Dictionary containing weights W and coefficients
+		b.
 		'''
-		for layer, param in zip(self.layers, params):
-			layer.update(*param)
+		for l in range(len(self.layers)):
+			p = l+1
+			W , b = params['W%d'%p], params['b%d'%p]
+			self.layers[l].update(W, b)
 
 
 	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
