@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-from src.layers import ConnectedLayer, OutputLayer
+from src.layers import ConnectedLayer, OutputLayer, LayerFactory
 from src.loss import softmax_loss
 
 class MLP(object):
@@ -13,7 +13,7 @@ class MLP(object):
 	    - num_classes: An integer giving the number of classes to classify.
 	    - dropout: Scalar between 0 and 1 giving dropout strength. If dropout=0 then
 	      the network should not use dropout at all.
-	    - use_batchnorm: Whether or not the network should use batch normalization.
+	    - normalization: Whether or not the network should use batch normalization.
 	    - reg: Scalar giving L2 regularization strength.
 	    - weight_scale: Scalar giving the standard deviation for random
 	      initialization of the weights.
@@ -44,8 +44,10 @@ class MLP(object):
 
 		'''
 		X = X.astype(self.dtype)
+		mode = 'test' if y is None else 'train'
+		params = {'mode':mode}
 
-		scores = self.forward_prop(X)
+		scores = self.forward_prop(X, mode)
 		# If test mode return early
 		if y is None:
 			return scores
@@ -54,14 +56,14 @@ class MLP(object):
 		return loss, grads
 
 
-	def forward_prop(self, X):
+	def forward_prop(self, X, mode):
 		'''
 		Do forward pass through the network to compute the scores
 		X: Array of input data
 		'''
 		scores = X
 		for layer in self.layers:
-			scores = layer.feed_forward(scores)
+			scores = layer.feed_forward(scores, mode)
 		return scores
 
 	def backward_prop(self, scores, y):
@@ -76,12 +78,14 @@ class MLP(object):
 		for layer in self.layers:
 			loss += 0.5*self.reg*np.sum(layer.W**2)
 		grads = {}
-
-		delta, grads['W%d'%self.num_layers], grads['b%d'%self.num_layers] = self.layers[-1].feed_backward(dscores) 
+		
+		delta, grad = self.layers[-1].feed_backward(dscores) 
+		grads.update(grad)
 		grads['W%d'%self.num_layers] += self.reg*self.layers[-1].W
 
 		for l in range(2, self.num_layers+1):
-			delta, grads['W%d'%(self.num_layers-l+1)], grads['b%d'%(self.num_layers-l+1)] = self.layers[-l].feed_backward(delta)
+			delta, grad = self.layers[-l].feed_backward(delta)
+			grads.update(grad)
 			grads['W%d'%(self.num_layers-l+1)] += self.reg*self.layers[-l].W
 		return loss, grads
 
@@ -94,9 +98,8 @@ class MLP(object):
 		'''
 		params = {}
 		for l in range(len(self.layers)):
-			p = l+1
-			params['W%d'%p] = self.layers[l].W.copy()
-			params['b%d'%p] = self.layers[l].b.copy()
+			layer = self.layers[l]
+			params.update(layer.params())
 		return params
 
 	def update_params(self, params):
@@ -107,19 +110,21 @@ class MLP(object):
 		'''
 		for l in range(len(self.layers)):
 			p = l+1
-			W , b = params['W%d'%p], params['b%d'%p]
-			self.layers[l].update(W, b)
+			d = {k.replace(str(p),''):v for k, v in params.items() if str(p) in k}
+			self.layers[l].update(d)
 
 
 	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
+		factory = LayerFactory(weight_scale, self.dtype)
 		dims = [input_dim] + hidden_dims + [num_classes]
 		layers = []
 
 		for l in range(self.num_layers-1):
-			layer = ConnectedLayer(dims[l], dims[l+1], weight_scale, self.dtype)
+			p = l+1
+			layer = factory.make(p, dims[l], dims[l+1], self.normalization)
 			layers.append(layer)
 
-		layer = OutputLayer(dims[-2], dims[-1], weight_scale, self.dtype)
+		layer = OutputLayer(self.num_layers, dims[-2], dims[-1], weight_scale, self.dtype)
 		layers.append(layer)
 
 		return layers

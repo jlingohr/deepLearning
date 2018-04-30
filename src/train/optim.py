@@ -110,7 +110,7 @@ def adam(w, dw, config=None):
     if config is None: config = {}
     config.setdefault('learning_rate', 1e-3)
     config.setdefault('beta1', 0.9)
-    config.setdefault('beta2', 0.999)
+    config.setdefault('beta2', 0.99)
     config.setdefault('epsilon', 1e-8)
     config.setdefault('m', np.zeros_like(w))
     config.setdefault('v', np.zeros_like(w))
