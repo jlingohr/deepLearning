@@ -285,3 +285,75 @@ def conv_backward_naive(dout, cache):
 	dx = dx_padded[:,:,pad:pad+H,pad:pad+W]
 	return dx, dw, db
 
+def max_pool_forward_naive(x, pool_param):
+	"""
+	A naive implementation of the forward pass for a max-pooling layer.
+
+	Inputs:
+	- x: Input data, of shape (N, C, H, W)
+	- pool_param: dictionary with the following keys:
+	  - 'pool_height': The height of each pooling region
+	  - 'pool_width': The width of each pooling region
+	  - 'stride': The distance between adjacent pooling regions
+
+	No padding is necessary here. Output size is given by 
+
+	Returns a tuple of:
+	- out: Output data, of shape (N, C, H', W') where H' and W' are given by
+	  H' = 1 + (H - pool_height) / stride
+	  W' = 1 + (W - pool_width) / stride
+	- cache: (x, pool_param)
+	"""
+	out = None
+	
+	N, C, H, W = x.shape
+	HH = pool_param['pool_height']
+	WW = pool_param['pool_width']
+	stride = pool_param['stride']
+	Hp = int(1 + (H-HH)/stride)
+	Wp = int(1 + (W-WW)/stride)
+
+	out = np.zeros((N,C,Hp,Wp))
+
+	for n in range(N):
+		for j in range(Hp):
+			for i in range(Wp):
+				out[n,:,j,i] = np.amax(x[n,:,j*stride:j*stride+HH,i*stride:i*stride+WW], axis=(-1,-2))
+
+	cache = (x, pool_param)
+	return out, cache
+
+
+def max_pool_backward_naive(dout, cache):
+	"""
+	A naive implementation of the backward pass for a max-pooling layer.
+
+	Inputs:
+	- dout: Upstream derivatives
+	- cache: A tuple of (x, pool_param) as in the forward pass.
+
+	Returns:
+	- dx: Gradient with respect to x
+	"""
+	dx = None
+
+	x, pool_param = cache
+	N,C,H,W = x.shape
+	HH = pool_param['pool_height']
+	WW = pool_param['pool_width']
+	stride = pool_param['stride']
+	Hp = int(1 + (H-HH)/stride)
+	Wp = int(1 + (W-WW)/stride)
+
+	dx = np.zeros_like(x)
+
+	for n in range(N):
+		for c in range(C):
+			for j in range(Hp):
+				for i in range(Wp):
+					ind = np.argmax(x[n,c,j*stride:j*stride+HH,i*stride:i*stride+WW])
+					ind1, ind2 = np.unravel_index(ind, (HH,WW))
+					dx[n,c,j*stride:j*stride+HH,i*stride:i*stride+WW][ind1, ind2] = dout[n,c,j,i]
+
+	return dx
+
