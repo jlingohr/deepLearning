@@ -1,10 +1,11 @@
 import numpy as np
 import random
 
-from src.layers import ConnectedLayer, OutputLayer, LayerFactory
+#from src.layers import ConnectedLayer, OutputLayer, LayerFactory
+from ..layers.dense import Dense
 from src.loss import softmax_loss
 
-class MLP(object):
+class Network(object):
 	def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10, normalization=None,
 		weight_scale=1e-2, reg=0.0, dtype=np.float32):
 		'''
@@ -47,16 +48,16 @@ class MLP(object):
 		mode = 'test' if y is None else 'train'
 		params = {'mode':mode}
 
-		scores = self.forward_prop(X, mode)
+		scores = self.feed_forward(X, mode)
 		# If test mode return early
 		if y is None:
 			return scores
 		# Use backpropagation
-		loss, grads = self.backward_prop(scores, y)
+		loss, grads = self.feed_backward(scores, y)
 		return loss, grads
 
 
-	def forward_prop(self, X, mode):
+	def feed_forward(self, X, mode):
 		'''
 		Do forward pass through the network to compute the scores
 		X: Array of input data
@@ -66,7 +67,7 @@ class MLP(object):
 			scores = layer.feed_forward(scores, mode)
 		return scores
 
-	def backward_prop(self, scores, y):
+	def feed_backward(self, scores, y):
 		'''
 		Compute loss and gradients using backpropagation
 		scores: Loss computed using forward propagation
@@ -89,6 +90,7 @@ class MLP(object):
 			grads['W%d'%(self.num_layers-l+1)] += self.reg*self.layers[-l].W
 		return loss, grads
 
+	@property
 	def params(self):
 		'''
 		Return weights and coefficients of each layer in a parameter
@@ -99,10 +101,10 @@ class MLP(object):
 		params = {}
 		for l in range(len(self.layers)):
 			layer = self.layers[l]
-			params.update(layer.params())
+			params.update(layer.params)
 		return params
 
-	def update_params(self, params):
+	def update(self, params):
 		'''
 		Update layers with new weights and biases
 		params: Dictionary containing weights W and coefficients
@@ -115,16 +117,15 @@ class MLP(object):
 
 
 	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
-		factory = LayerFactory(weight_scale, self.dtype)
 		dims = [input_dim] + hidden_dims + [num_classes]
 		layers = []
 
 		for l in range(self.num_layers-1):
 			p = l+1
-			layer = factory.make(p, dims[l], dims[l+1], self.normalization)
+			layer = Dense(dims[l], dims[l+1], weight_scale, self.dtype, self.normalization, p, 'affine-relu')
 			layers.append(layer)
 
-		layer = OutputLayer(self.num_layers, dims[-2], dims[-1], weight_scale, self.dtype)
+		layer = Dense(dims[-2], dims[-1], weight_scale, self.dtype, self.normalization, self.num_layers)
 		layers.append(layer)
 
 		return layers
