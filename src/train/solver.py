@@ -185,11 +185,10 @@ class Solver(object):
             dw = grads[p]
             config = self.optim_configs[p]
             next_w, next_config = self.update_rule(w, dw, config)
-            #self.model.params[p] = next_w
             next_ws[p] = next_w
             self.optim_configs[p] = next_config
         # update parameters
-        self.model.update(next_ws)
+        self.model.params = next_ws
 
 
     def _save_checkpoint(self):
@@ -304,4 +303,4 @@ class Solver(object):
                         self.best_params[k] = v.copy()
 
         # At the end of training swap the best params into the model
-        self.model.update(self.best_params)# = self.best_params
+        self.model.params = self.best_params 

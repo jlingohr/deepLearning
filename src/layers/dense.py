@@ -2,7 +2,7 @@ from .base import Layer
 from ..activations import activations
 
 class Dense(Layer):	
-	def __init__(self, input_size, output_size, weight_scale, dtype, normalization=None, name=None, activation='affine'):
+	def __init__(self, input_size, output_size, weight_scale, dtype, name=None, activation='affine'):
 		Layer.__init__(self, input_size, output_size, weight_scale, dtype, name)
 		self.activation = activations.ACTIVATIONS[activation]
 

@@ -57,7 +57,7 @@ class Batchnorm(Activation):
 	def backward(self, dout, cache):
 		return batchnorm_backward(dout, cache)
 
-class AffineBatchnorm(Activation):
+class AffineBatchNorm(Activation):
 	def forward(self, **kwargs):
 		x = kwargs['x']
 		w = kwargs['w']

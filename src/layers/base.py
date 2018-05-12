@@ -17,18 +17,6 @@ class Layer(metaclass=ABCMeta):
 		self._W = (np.random.randn(input_size, output_size) * weight_scale).astype(dtype)
 		self._b = np.zeros(output_size).astype(dtype)
 
-	# @abstractmethod
-	# def activation_forward(self):
-	# 	return 
-
-	# @abstractmethod
-	# def activation_back(self):
-	# 	return 
-
-	# @abstractproperty
-	# def activation(self):
-	# 	''''''
-
 	@abstractmethod
 	def feed_forward(self, x, mode):
 		'''
@@ -51,7 +39,6 @@ class Layer(metaclass=ABCMeta):
 		Returns dx, dw, db
 		'''
 	
-
 	@property
 	def W(self):
 		return self._W
@@ -70,15 +57,12 @@ class Layer(metaclass=ABCMeta):
 
 	@property
 	def params(self):
-		params = {}
-		params['W%d'%self.name] = self._W
-		params['b%d'%self.name] = self._b
-		return params
+		p = {}
+		p['W%d'%self.name] = self._W
+		p['b%d'%self.name] = self._b
+		return p
 
-	def update(self, params):
-		'''
-		Updates weights and bes
-		params: Dictionary containin W, b, gamma, beta
-		'''
-		self._W = params['W']
-		self._b = params['b']
+	@params.setter
+	def params(self, new_params):
+		self._W = new_params['W']
+		self._b = new_params['b']

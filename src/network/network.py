@@ -1,11 +1,15 @@
 import numpy as np
 import random
+import re
 
 #from src.layers import ConnectedLayer, OutputLayer, LayerFactory
 from ..layers.dense import Dense
+from ..layers.normalization import BatchNormalization
+
 from src.loss import softmax_loss
 
 class Network(object):
+
 	def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10, normalization=None,
 		weight_scale=1e-2, reg=0.0, dtype=np.float32):
 		'''
@@ -29,7 +33,37 @@ class Network(object):
 		self.dtype = dtype
 		self.reg = reg
 		self.normalization = normalization
-		self.layers = self.__initialize_layers(hidden_dims, input_dim, num_classes, weight_scale)
+		self.layers = self._initialize_layers(hidden_dims, input_dim, num_classes, weight_scale)
+
+	@property
+	def params(self):
+		'''
+		Return weights and coefficients of each layer in a parameter
+		dictionary.
+		Returns:
+		params: dictionary of weights W and coefficients b
+		'''
+		par = {}
+		for l in range(len(self.layers)):
+			layer = self.layers[l]
+			par.update(layer.params)
+		return par
+
+	@params.setter
+	def params(self, new_params):
+		for l in range(len(self.layers)):
+			p = l+1
+			d = {k.replace(str(p),''):v for k, v in new_params.items() if str(p) in k}
+			self.layers[l].params = d
+		# for key, val in new_params.items():
+		# 	p, l = re.match('(\w)(\d)', key).groups()
+		# 	l = int(l)-1
+		# 	if p == 'W':
+		# 		self.layers[l].W = val
+		# 	else:
+		# 		self.layers[l].b = val
+
+
 
 	def loss(self, X, y=None):
 		'''
@@ -48,16 +82,16 @@ class Network(object):
 		mode = 'test' if y is None else 'train'
 		params = {'mode':mode}
 
-		scores = self.feed_forward(X, mode)
+		scores = self._feed_forward(X, mode)
 		# If test mode return early
 		if y is None:
 			return scores
 		# Use backpropagation
-		loss, grads = self.feed_backward(scores, y)
+		loss, grads = self._feed_backward(scores, y)
 		return loss, grads
 
 
-	def feed_forward(self, X, mode):
+	def _feed_forward(self, X, mode):
 		'''
 		Do forward pass through the network to compute the scores
 		X: Array of input data
@@ -67,7 +101,7 @@ class Network(object):
 			scores = layer.feed_forward(scores, mode)
 		return scores
 
-	def feed_backward(self, scores, y):
+	def _feed_backward(self, scores, y):
 		'''
 		Compute loss and gradients using backpropagation
 		scores: Loss computed using forward propagation
@@ -89,43 +123,22 @@ class Network(object):
 			grads.update(grad)
 			grads['W%d'%(self.num_layers-l+1)] += self.reg*self.layers[-l].W
 		return loss, grads
+		
 
-	@property
-	def params(self):
-		'''
-		Return weights and coefficients of each layer in a parameter
-		dictionary.
-		Returns:
-		params: dictionary of weights W and coefficients b
-		'''
-		params = {}
-		for l in range(len(self.layers)):
-			layer = self.layers[l]
-			params.update(layer.params)
-		return params
-
-	def update(self, params):
-		'''
-		Update layers with new weights and biases
-		params: Dictionary containing weights W and coefficients
-		b.
-		'''
-		for l in range(len(self.layers)):
-			p = l+1
-			d = {k.replace(str(p),''):v for k, v in params.items() if str(p) in k}
-			self.layers[l].update(d)
-
-
-	def __initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
+	def _initialize_layers(self, hidden_dims, input_dim, num_classes, weight_scale):
 		dims = [input_dim] + hidden_dims + [num_classes]
 		layers = []
 
 		for l in range(self.num_layers-1):
 			p = l+1
-			layer = Dense(dims[l], dims[l+1], weight_scale, self.dtype, self.normalization, p, 'affine-relu')
+			layer = None
+			if self.normalization == 'batchnorm':
+				layer = BatchNormalization(dims[l], dims[l+1], weight_scale, self.dtype, p)
+			else:
+				layer = Dense(dims[l], dims[l+1], weight_scale, self.dtype, p, 'affine-relu')
 			layers.append(layer)
-
-		layer = Dense(dims[-2], dims[-1], weight_scale, self.dtype, self.normalization, self.num_layers)
+		
+		layer = Dense(dims[-2], dims[-1], weight_scale, self.dtype, self.num_layers)
 		layers.append(layer)
 
 		return layers
