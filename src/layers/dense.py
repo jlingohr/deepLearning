@@ -1,9 +1,13 @@
 from .base import Layer
 from ..activations import activations
 
+import numpy as np
+
 class Dense(Layer):	
 	def __init__(self, input_size, output_size, weight_scale, dtype, name=None, activation='affine'):
-		Layer.__init__(self, input_size, output_size, weight_scale, dtype, name)
+		Layer.__init__(self, weight_scale, dtype, name)
+		self._W = (np.random.randn(input_size, output_size) * weight_scale).astype(dtype)
+		self._b = np.zeros(output_size).astype(dtype)
 		self.activation = activations.ACTIVATIONS[activation]
 
 	def feed_forward(self, x, mode):

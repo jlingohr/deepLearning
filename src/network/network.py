@@ -55,15 +55,6 @@ class Network(object):
 			p = l+1
 			d = {k.replace(str(p),''):v for k, v in new_params.items() if str(p) in k}
 			self.layers[l].params = d
-		# for key, val in new_params.items():
-		# 	p, l = re.match('(\w)(\d)', key).groups()
-		# 	l = int(l)-1
-		# 	if p == 'W':
-		# 		self.layers[l].W = val
-		# 	else:
-		# 		self.layers[l].b = val
-
-
 
 	def loss(self, X, y=None):
 		'''

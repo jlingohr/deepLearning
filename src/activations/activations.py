@@ -100,13 +100,13 @@ class ConvolutionRelu(Activation):
 		return conv_relu_forward_naive(x, w, b, conv_param)
 
 	def backward(self, dout, cache):
-		return conv_relu_backward_naive(dout, cache):
+		return conv_relu_backward_naive(dout, cache)
 
-class Convolution(Activation):
+class ConvMaxPoolRelu(Activation):
 	def forward(self, **kwargs):
 		x = kwargs['x']
 		w = kwargs['w']
-		b = kwargs['conv_param']
+		b = kwargs['b']
 		conv_param = kwargs['conv_param']
 		pool_param = kwargs['pool_param']
 		return conv_relu_pool_forward_naive(x, w, b, conv_param, pool_param)

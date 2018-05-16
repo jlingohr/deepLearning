@@ -3,19 +3,18 @@ import numpy as np
 
 class Layer(metaclass=ABCMeta):
 
-	def __init__(self, input_size, output_size, weight_scale, dtype, name=None):
+	def __init__(self, weight_scale, dtype, name=None):
 		'''
 		Initialize each layer in the network with a weight matrix
 		W chosen from a Gaussian distribution and an intercept
 		of 0
 		'''
 		self.name = name
-		self.input_size = input_size
-		self.output_size = output_size
 		self.weight_scale = weight_scale
 		self.dtype = dtype
-		self._W = (np.random.randn(input_size, output_size) * weight_scale).astype(dtype)
-		self._b = np.zeros(output_size).astype(dtype)
+		self._W = None
+		self._b = None
+		self.layers = None
 
 	@abstractmethod
 	def feed_forward(self, x, mode):

@@ -7,7 +7,9 @@ class BatchNormalization(Layer):
 		'''
 		Special layer to use when using batch normalization
 		'''
-		Layer.__init__(self, input_size, output_size, weight_scale, dtype, name)
+		Layer.__init__(self, weight_scale, dtype, name)
+		self._W = (np.random.randn(input_size, output_size) * weight_scale).astype(dtype)
+		self._b = np.zeros(output_size).astype(dtype)
 		self.activation = AffineBatchNorm()
 		self._gamma = np.ones((1,1))
 		self._beta = np.zeros((1,1))
