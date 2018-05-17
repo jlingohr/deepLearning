@@ -348,56 +348,173 @@ def max_pool_backward_naive(dout, cache):
 	return dx
 
 def conv_relu_forward_naive(x, w, b, conv_param):
-    """
-    A convenience layer that performs a convolution followed by a ReLU.
+	"""
+	A convenience layer that performs a convolution followed by a ReLU.
 
-    Inputs:
-    - x: Input to the convolutional layer
-    - w, b, conv_param: Weights and parameters for the convolutional layer
+	Inputs:
+	- x: Input to the convolutional layer
+	- w, b, conv_param: Weights and parameters for the convolutional layer
 
-    Returns a tuple of:
-    - out: Output from the ReLU
-    - cache: Object to give to the backward pass
-    """
-    a, conv_cache = conv_forward_naive(x, w, b, conv_param)
-    out, relu_cache = relu_forward(a)
-    cache = (conv_cache, relu_cache)
-    return out, cache
+	Returns a tuple of:
+	- out: Output from the ReLU
+	- cache: Object to give to the backward pass
+	"""
+	a, conv_cache = conv_forward_naive(x, w, b, conv_param)
+	out, relu_cache = relu_forward(a)
+	cache = (conv_cache, relu_cache)
+	return out, cache
 
 def conv_relu_backward_naive(dout, cache):
-    """
-    Backward pass for the conv-relu convenience layer.
-    """
-    conv_cache, relu_cache = cache
-    da = relu_backward(dout, relu_cache)
-    dx, dw, db = conv_backward_naive(da, conv_cache)
-    return dx, dw, db
+	"""
+	Backward pass for the conv-relu convenience layer.
+	"""
+	conv_cache, relu_cache = cache
+	da = relu_backward(dout, relu_cache)
+	dx, dw, db = conv_backward_naive(da, conv_cache)
+	return dx, dw, db
 
 def conv_relu_pool_forward_naive(x, w, b, conv_param, pool_param):
-    """
-    Convenience layer that performs a convolution, a ReLU, and a pool.
+	"""
+	Convenience layer that performs a convolution, a ReLU, and a pool.
 
-    Inputs:
-    - x: Input to the convolutional layer
-    - w, b, conv_param: Weights and parameters for the convolutional layer
-    - pool_param: Parameters for the pooling layer
+	Inputs:
+	- x: Input to the convolutional layer
+	- w, b, conv_param: Weights and parameters for the convolutional layer
+	- pool_param: Parameters for the pooling layer
 
-    Returns a tuple of:
-    - out: Output from the pooling layer
-    - cache: Object to give to the backward pass
-    """
-    a, conv_cache = conv_forward_naive(x, w, b, conv_param)
-    s, relu_cache = relu_forward(a)
-    out, pool_cache = max_pool_forward_naive(s, pool_param)
-    cache = (conv_cache, relu_cache, pool_cache)
-    return out, cache
+	Returns a tuple of:
+	- out: Output from the pooling layer
+	- cache: Object to give to the backward pass
+	"""
+	a, conv_cache = conv_forward_naive(x, w, b, conv_param)
+	s, relu_cache = relu_forward(a)
+	out, pool_cache = max_pool_forward_naive(s, pool_param)
+	cache = (conv_cache, relu_cache, pool_cache)
+	return out, cache
 
 def conv_relu_pool_backward_naive(dout, cache):
+	"""
+	Backward pass for the conv-relu-pool convenience layer
+	"""
+	conv_cache, relu_cache, pool_cache = cache
+	ds = max_pool_backward_naive(dout, pool_cache)
+	da = relu_backward(ds, relu_cache)
+	dx, dw, db = conv_backward_naive(da, conv_cache)
+	return dx, dw, db
+
+def spatial_batchnorm_forward(x, gamma, beta, bn_param):
+	"""
+	Computes the forward pass for spatial batch normalization.
+
+	Inputs:
+	- x: Input data of shape (N, C, H, W)
+	- gamma: Scale parameter, of shape (C,)
+	- beta: Shift parameter, of shape (C,)
+	- bn_param: Dictionary with the following keys:
+	  - mode: 'train' or 'test'; required
+	  - eps: Constant for numeric stability
+	  - momentum: Constant for running mean / variance. momentum=0 means that
+		old information is discarded completely at every time step, while
+		momentum=1 means that new information is never incorporated. The
+		default of momentum=0.9 should work well in most situations.
+	  - running_mean: Array of shape (D,) giving running mean of features
+	  - running_var Array of shape (D,) giving running variance of features
+
+	Returns a tuple of:
+	- out: Output data, of shape (N, C, H, W)
+	- cache: Values needed for the backward pass
+	"""
+	out, cache = None, None
+
+	N, C, H, W = x.shape
+	y = x.transpose(0,2,3,1).reshape((N*H*W,C))
+	out, cache = batchnorm_forward(y, gamma, beta, bn_param)
+	out = out.reshape((N,H,W,C)).transpose(0,3,1,2)
+	###########################################################################
+	#                             END OF YOUR CODE                            #
+	###########################################################################
+
+	return out, cache
+
+
+def spatial_batchnorm_backward(dout, cache):
+	"""
+	Computes the backward pass for spatial batch normalization.
+
+	Inputs:
+	- dout: Upstream derivatives, of shape (N, C, H, W)
+	- cache: Values from the forward pass
+
+	Returns a tuple of:
+	- dx: Gradient with respect to inputs, of shape (N, C, H, W)
+	- dgamma: Gradient with respect to scale parameter, of shape (C,)
+	- dbeta: Gradient with respect to shift parameter, of shape (C,)
+	"""
+	dx, dgamma, dbeta = None, None, None
+
+	N, C, H, W = dout.shape
+	y = dout.transpose(0,2,3,1).reshape((N*H*W,C))
+	dx, dgamma, dbeta = batchnorm_backward(y, cache)
+	dx = dx.reshape((N,H,W,C)).transpose(0,3,1,2)
+
+	return dx, dgamma, dbeta
+
+def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     """
-    Backward pass for the conv-relu-pool convenience layer
+    Computes the forward pass for spatial group normalization.
+    In contrast to layer normalization, group normalization splits each entry 
+    in the data into G contiguous pieces, which it then normalizes independently.
+    Per feature shifting and scaling are then applied to the data, in a manner identical to that of batch normalization and layer normalization.
+
+    Inputs:
+    - x: Input data of shape (N, C, H, W)
+    - gamma: Scale parameter, of shape (C,)
+    - beta: Shift parameter, of shape (C,)
+    - G: Integer mumber of groups to split into, should be a divisor of C
+    - gn_param: Dictionary with the following keys:
+      - eps: Constant for numeric stability
+
+    Returns a tuple of:
+    - out: Output data, of shape (N, C, H, W)
+    - cache: Values needed for the backward pass
     """
-    conv_cache, relu_cache, pool_cache = cache
-    ds = max_pool_backward_naive(dout, pool_cache)
-    da = relu_backward(ds, relu_cache)
-    dx, dw, db = conv_backward_naive(da, conv_cache)
-    return dx, dw, db
+    out, cache = None, None
+    eps = gn_param.get('eps',1e-5)
+    ###########################################################################
+    # TODO: Implement the forward pass for spatial group normalization.       #
+    # This will be extremely similar to the layer norm implementation.        #
+    # In particular, think about how you could transform the matrix so that   #
+    # the bulk of the code is similar to both train-time batch normalization  #
+    # and layer normalization!                                                # 
+    ###########################################################################
+    pass
+    ###########################################################################
+    #                             END OF YOUR CODE                            #
+    ###########################################################################
+    return out, cache
+
+
+def spatial_groupnorm_backward(dout, cache):
+    """
+    Computes the backward pass for spatial group normalization.
+
+    Inputs:
+    - dout: Upstream derivatives, of shape (N, C, H, W)
+    - cache: Values from the forward pass
+
+    Returns a tuple of:
+    - dx: Gradient with respect to inputs, of shape (N, C, H, W)
+    - dgamma: Gradient with respect to scale parameter, of shape (C,)
+    - dbeta: Gradient with respect to shift parameter, of shape (C,)
+    """
+    dx, dgamma, dbeta = None, None, None
+
+    ###########################################################################
+    # TODO: Implement the backward pass for spatial group normalization.      #
+    # This will be extremely similar to the layer norm implementation.        #
+    ###########################################################################
+    pass
+    ###########################################################################
+    #                             END OF YOUR CODE                            #
+    ###########################################################################
+    return dx, dgamma, dbeta

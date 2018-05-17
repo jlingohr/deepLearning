@@ -1,7 +1,6 @@
 import numpy as np
 
 from ..layers.convolutional import Convolutional
-from ..layers.pooling import MaxPooling
 from ..layers.dense import Dense
 from src.loss import softmax_loss
 
